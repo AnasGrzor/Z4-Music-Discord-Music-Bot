@@ -246,6 +246,30 @@ async def clear(ctx: commands.Context) -> None:
     await ctx.send("Cleared the queue.")
 
 @bot.command()
+async def rmfilter(ctx: commands.Context) -> None:
+    """Remove the filters."""
+    player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
+    if not player:
+        return
+    filters: wavelink.Filters = player.filters
+    filters.reset()
+    await player.set_filters(filters)
+    await ctx.message.add_reaction("\u2705")
+
+@bot.command()
+async def slowed(ctx: commands.Context) -> None:
+    """Set the filter to a slowed style."""
+    player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
+    if not player:
+        return
+
+    filters: wavelink.Filters = player.filters
+    filters.timescale.set(pitch=0.9, speed=0.8, rate=1)
+    await player.set_filters(filters)
+
+    await ctx.message.add_reaction("\u2705")
+
+@bot.command()
 async def loop(ctx: commands.Context) -> None:
     """Toggle looping the current song."""
     player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)

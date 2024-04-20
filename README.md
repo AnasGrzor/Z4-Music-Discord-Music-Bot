@@ -32,7 +32,10 @@ This Discord bot allows users to play music in voice channels using the Wavelink
 
 - Use `!play <query>` to play a song with the given query.
 - Use `!skip` to skip the current song.
+- Use `!seek <seconds>` to seek to a specific position in the currently playing track.
 - Use `!nightcore` to set the filter to a nightcore style.
+- Use `!slowed` to set the filter to a slowed style.
+- Use `rmfilter` to remove all filters.
 - Use `!toggle`, `!pause`, or `!resume` to pause or resume the player.
 - Use `!volume <value>` to change the volume of the player.
 - Use `!queue` to display the current queue.
