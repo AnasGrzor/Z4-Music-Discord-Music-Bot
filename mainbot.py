@@ -271,6 +271,15 @@ async def disconnect(ctx: commands.Context) -> None:
     await player.disconnect()
     await ctx.message.add_reaction("\u2705")
 
+@bot.command()
+async def seek(ctx: commands.Context, seconds: int = 0) -> None:
+    """Seek to the provided position in the currently playing track, in seconds."""
+    player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
+    if not player:
+        return
+    await player.seek(seconds * 1000)  # Convert seconds to milliseconds
+    await ctx.message.add_reaction("\u2705")    
+
 
 async def main() -> None:
     async with bot:
