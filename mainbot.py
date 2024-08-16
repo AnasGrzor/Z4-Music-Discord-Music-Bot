@@ -1,13 +1,27 @@
 """
-Author: AnasGrzor
+MIT License
 
-Implemented Using Wavelink Library (https://github.com/PythonistaGuild/Wavelink)
+Copyright (c) 2019-Current PythonistaGuild, EvieePy
 
-Description:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-This Discord bot is your ultimate companion for music playback in your server. With a wide range of commands, it enables seamless control over the music playing experience. From playing songs using keywords or URLs to toggling playback filters like nightcore and slowed, managing the queue, adjusting volume, and seeking to specific positions within tracks, this bot provides a comprehensive suite of features to enhance your Discord music sessions. Whether you're hosting a listening party, chilling with friends, or simply enjoying your favorite tunes, this bot ensures a smooth and customizable music playback experience tailored to your preferences.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 """
+
 import asyncio
 import logging
 from typing import cast
@@ -126,11 +140,49 @@ async def play(ctx: commands.Context, *, query: str) -> None:
         await player.play(player.queue.get(), volume=30)
 
     # Optionally delete the invokers message...
-    try:
-        await ctx.message.delete()
-    except discord.HTTPException:
-        pass
+    # try:
+    #     await ctx.message.delete()
+    # except discord.HTTPException:
+    #     pass
 
+@bot.command()
+async def play_lofi(ctx: commands.Context) -> None:
+        """Play lo-fi music 24/7."""
+        if not ctx.guild:
+            return
+
+        player: wavelink.Player
+        player = cast(wavelink.Player, ctx.voice_client)  # type: ignore
+
+        if not player:
+            try:
+                player = await ctx.author.voice.channel.connect(cls=wavelink.Player)  # type: ignore
+            except AttributeError:
+                await ctx.send("Please join a voice channel first before using this command.")
+                return
+            except discord.ClientException:
+                await ctx.send("I was unable to join this voice channel. Please try again.")
+                return
+
+        player.autoplay = wavelink.AutoPlayMode.enabled
+
+        if not hasattr(player, "home"):
+            player.home = ctx.channel
+        elif player.home != ctx.channel:
+            await ctx.send(f"You can only play songs in {player.home.mention}, as the player has already started there.")
+            return
+
+        lofi_url = "https://www.youtube.com/watch?v=jfKfPfyJRdk"  # Example lo-fi live stream URL
+        tracks: wavelink.Search = await wavelink.Playable.search(lofi_url)
+        if not tracks:
+            await ctx.send(f"{ctx.author.mention} - Could not find any tracks with that query. Please try again.")
+            return
+
+        track: wavelink.Playable = tracks[0]
+        await player.queue.put_wait(track)
+
+        if not player.playing:
+            await player.play(player.queue.get(), volume=30)
 
 @bot.command()
 async def skip(ctx: commands.Context) -> None:
@@ -233,6 +285,31 @@ async def clear(ctx: commands.Context) -> None:
     await ctx.send("Cleared the queue.")
 
 @bot.command()
+async def loop(ctx: commands.Context) -> None:
+    """Toggle looping the current song."""
+    player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
+    if not player:
+        return
+    # Toggle between normal mode and loop mode
+    if player.queue.mode == wavelink.QueueMode.normal:
+        player.queue.mode = wavelink.QueueMode.loop
+        await ctx.send(f"Looped **{player.current.title}**.")
+    else:
+        player.queue.mode = wavelink.QueueMode.normal
+        await ctx.send(f"Unlooped **{player.current.title}**.")
+
+
+@bot.command(aliases=["dc"])
+async def disconnect(ctx: commands.Context) -> None:
+    """Disconnect the Player."""
+    player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
+    if not player:
+        return
+
+    await player.disconnect()
+    await ctx.message.add_reaction("\u2705")
+
+@bot.command()
 async def rmfilter(ctx: commands.Context) -> None:
     """Remove the filters."""
     player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
@@ -257,39 +334,13 @@ async def slowed(ctx: commands.Context) -> None:
     await ctx.message.add_reaction("\u2705")
 
 @bot.command()
-async def loop(ctx: commands.Context) -> None:
-    """Toggle looping the current song."""
-    player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
-    if not player:
-        return
-    # Toggle between normal mode and loop mode
-    if player.queue.mode == wavelink.QueueMode.normal:
-        player.queue.mode = wavelink.QueueMode.loop
-        await ctx.send(f"Looped **{player.current.title}**.")
-        looped = True
-    else:
-        player.queue.mode = wavelink.QueueMode.normal
-        await ctx.send(f"Unlooped **{player.current.title}**.")
-
-
-@bot.command(aliases=["dc"])
-async def disconnect(ctx: commands.Context) -> None:
-    """Disconnect the Player."""
-    player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
-    if not player:
-        return
-
-    await player.disconnect()
-    await ctx.message.add_reaction("\u2705")
-
-@bot.command()
 async def seek(ctx: commands.Context, seconds: int = 0) -> None:
     """Seek to the provided position in the currently playing track, in seconds."""
     player: wavelink.Player = cast(wavelink.Player, ctx.voice_client)
     if not player:
         return
     await player.seek(seconds * 1000)  # Convert seconds to milliseconds
-    await ctx.message.add_reaction("\u2705")    
+    await ctx.message.add_reaction("\u2705")
 
 
 async def main() -> None:
