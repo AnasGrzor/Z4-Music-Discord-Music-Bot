@@ -2,7 +2,7 @@
 
 This Discord bot allows users to play music in voice channels using the Wavelink library.
 
-### Note: Use the Lavalink version provided otherwise the bot may not work.
+### Note: Download the latest lavalink from the lavalink repo.
 
 ## Installation
 
